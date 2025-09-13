@@ -161,76 +161,44 @@ quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
 # ---------- CONFIG ----------
-# Treat a line as a "checkbox step" if it starts with: number., letter., or roman numeral.
+# Checkbox rule: any line starting with number., letter., or roman numeral.
 STEP_PATTERN = re.compile(r'^\s*((\d+|[a-z]|[ivxlcdm]+)\.)\s+', flags=re.IGNORECASE)
 
-# Split the big text into two main sections based on headings you provided.
-# We keep everything verbatim inside each section.
-SECTION_TITLES = [
+TOP_SECTION_TITLES = [
     "Exposure Indexing (EI) Guide:",
     "Sony FX6 Advanced Settings Guide: White Balance and Autofocus",
 ]
 
-def split_into_sections(full_text: str, titles: list[str]) -> list[tuple[str, str]]:
+def split_top_sections(full_text: str) -> list[tuple[str, str]]:
     sections: list[tuple[str, str]] = []
-    remaining = full_text
-    for i, title in enumerate(titles):
-        start = remaining.find(title)
-        if start == -1:
-            continue
-        # from this title to the next title or end
-        after = remaining[start + len(title):]
-        next_start = None
-        if i + 1 < len(titles):
-            nxt = after.find(titles[i+1])
-            if nxt != -1:
-                next_start = nxt
-        body = after[:next_start] if next_start is not None else after
-        sections.append((title.rstrip(':'), body.strip("\n")))
-        # advance remaining
-        remaining = after[next_start:] if next_start is not None else ""
-    # If anything remains that didn't match a title, append as Misc
-    leftover = remaining.strip()
-    if leftover:
-        sections.append(("Additional", leftover))
+    text = full_text
+    # Exposure Indexing section
+    i0 = text.find(TOP_SECTION_TITLES[0])
+    i1 = text.find(TOP_SECTION_TITLES[1])
+    if i0 != -1:
+        ei_body = text[i0 + len(TOP_SECTION_TITLES[0]): i1 if i1 != -1 else None]
+        sections.append((TOP_SECTION_TITLES[0].rstrip(':'), ei_body.strip("\n")))
+    if i1 != -1:
+        fx6_body = text[i1 + len(TOP_SECTION_TITLES[1]):]
+        sections.append((TOP_SECTION_TITLES[1], fx6_body.strip("\n")))
     return sections
 
-def render_section(title: str, body: str, key_prefix: str):
-    with st.expander(title, expanded=(title.startswith("Exposure Indexing"))):
-        # render line by line; checkbox for numbered/lettered/roman lines, otherwise plain markdown
+def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = False, title: str | None = None):
+    if title is not None:
+        ctx = st.expander(title, expanded=expanded)
+    else:
+        # no expander
+        ctx = st.container()
+    with ctx:
         for idx, raw_line in enumerate(body.splitlines(), start=1):
             line = raw_line.rstrip()
             if not line:
                 st.write("")  # preserve blank lines
                 continue
             if STEP_PATTERN.match(line):
-                # Stable key to persist state across reruns
-                cb_key = f"{key_prefix}_cb_{idx}"
-                st.checkbox(line, key=cb_key)
+                st.checkbox(line, key=f"{key_prefix}_cb_{idx}")
             else:
-                # Use markdown to keep punctuation/quotes; don't alter content
                 st.markdown(line)
 
-# ---------- UI CONTROLS ----------
-colA, colB = st.columns([1, 1])
-with colA:
-    if st.button("Clear all checkboxes"):
-        for k in list(st.session_state.keys()):
-            if k.startswith("sec"):
-                st.session_state[k] = False
-        st.success("Cleared.")
-
-with colB:
-    st.download_button(
-        "Download original text (UTF-8)",
-        data=FULL_TEXT,
-        file_name="ei_fx6_guide.txt",
-        mime="text/plain"
-    )
-
-st.divider()
-
-# ---------- RENDER ----------
-sections = split_into_sections(FULL_TEXT, SECTION_TITLES)
-for si, (title, body) in enumerate(sections, start=1):
-    render_section(title, body, key_prefix=f"sec{si}")
+def render_fx6_split(fx6_body: str):
+    # Split FX6 body into White Balance and Autofocus using the int
