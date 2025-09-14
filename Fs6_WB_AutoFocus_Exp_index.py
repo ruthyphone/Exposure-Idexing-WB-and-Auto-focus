@@ -184,12 +184,22 @@ quickly reach peak focus without engaging the autofocus tracking feature.
 TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|i{1,3}|iv|v|vi{0,3}|ix|x)\.)\s+(.*)$', re.IGNORECASE)
 NUM_RE   = re.compile(r'^\d+\.')                 
 ALPHA_RE = re.compile(r'^[A-Za-z]\.')            
-ROMAN_RE = re.compile(r'^(i{1,3}|iv|v|vi{0,3}|ix|x)\.$', re.IGNORECASE)
+# ROMAN_RE = re.compile(r'^(i{1,3}|iv|v|vi{0,3}|ix|x)\.$', re.IGNORECASE)
+ROMAN_RE = re.compile(r'^(?:i{1,3}|iv|v|vi{1,3}|ix|x)\.$', re.IGNORECASE)
 
+
+# def level_for_token(token: str) -> int:
+#   if NUM_RE.match(token): return 0
+#  if ALPHA_RE.match(token): return 1
+# if ROMAN_RE.match(token): return 2
+# return 0
 def level_for_token(token: str) -> int:
-    if NUM_RE.match(token): return 0
-    if ALPHA_RE.match(token): return 1
-    if ROMAN_RE.match(token): return 2
+    if NUM_RE.match(token):
+        return 0
+    if ROMAN_RE.match(token):     # <- check roman FIRST
+        return 2
+    if ALPHA_RE.match(token):
+        return 1
     return 0
 
 # ---------- PARSER ----------
