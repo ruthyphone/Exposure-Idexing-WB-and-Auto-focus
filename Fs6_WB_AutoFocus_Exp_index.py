@@ -161,18 +161,36 @@ quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
 # ---------- CONFIG ----------
-# Checkbox rule: any line starting with number., letter., or roman numeral.
-STEP_PATTERN = re.compile(r'^\s*((\d+|[a-z]|[ivxlcdm]+)\.)\s+', flags=re.IGNORECASE)
+# Patterns to detect leading markers
+NUM_PATTERN   = re.compile(r'^\s*\d+\.\s+')
+ALPHA_PATTERN = re.compile(r'^\s*[a-zA-Z]\.\s+')
+ROMAN_PATTERN = re.compile(r'^\s*(?=[ivxlcdmIVXLCDM]+\.\s+)[ivxlcdmIVXLCDM]+\.\s+')
+
+# Treat a line as a "checkbox step" if it starts with: number., letter., or roman numeral.
+STEP_PATTERN = re.compile(r'^\s*((\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\.)\s+')
 
 TOP_SECTION_TITLES = [
     "Exposure Indexing (EI) Guide:",
     "Sony FX6 Advanced Settings Guide: White Balance and Autofocus",
 ]
 
+# Indentation: one level = two em-spaces
+EM = " "  # Unicode em-space
+INDENT_PER_LEVEL = 2  # number of em-spaces per level
+
+def indent_for_line(line: str) -> int:
+    """Return logical indent level: 0 for 1., 1 for a., 2 for i./ii./iii."""
+    if NUM_PATTERN.match(line):
+        return 0
+    if ALPHA_PATTERN.match(line):
+        return 1
+    if ROMAN_PATTERN.match(line):
+        return 2
+    return 0
+
 def split_top_sections(full_text: str) -> list[tuple[str, str]]:
     sections: list[tuple[str, str]] = []
     text = full_text
-    # Exposure Indexing section
     i0 = text.find(TOP_SECTION_TITLES[0])
     i1 = text.find(TOP_SECTION_TITLES[1])
     if i0 != -1:
@@ -184,11 +202,7 @@ def split_top_sections(full_text: str) -> list[tuple[str, str]]:
     return sections
 
 def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = False, title: str | None = None):
-    if title is not None:
-        ctx = st.expander(title, expanded=expanded)
-    else:
-        # no expander
-        ctx = st.container()
+    ctx = st.expander(title, expanded=expanded) if title is not None else st.container()
     with ctx:
         for idx, raw_line in enumerate(body.splitlines(), start=1):
             line = raw_line.rstrip()
@@ -196,22 +210,22 @@ def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = Fa
                 st.write("")  # preserve blank lines
                 continue
             if STEP_PATTERN.match(line):
-                st.checkbox(line, key=f"{key_prefix}_cb_{idx}")
+                level = indent_for_line(line)
+                prefix = EM * (INDENT_PER_LEVEL * level)
+                # Use a stable key so state persists even if label spacing changes
+                st.checkbox(prefix + line, key=f"{key_prefix}_cb_{idx}")
             else:
                 st.markdown(line)
 
 def render_fx6_split(fx6_body: str):
-    # Split FX6 body into White Balance and Autofocus using the internal marker "AUTO FOCUS:"
     marker = "AUTO FOCUS:"
     m_idx = fx6_body.find(marker)
     if m_idx == -1:
-        # If not found, just render everything in one expander
         render_lines_with_checkboxes(fx6_body, key_prefix="fx6_all", expanded=False, title="Sony FX6 Advanced Settings")
         return
     wb_body = fx6_body[:m_idx].strip("\n")
-    af_body = fx6_body[m_idx:].strip("\n")  # keep the line "AUTO FOCUS:" inside to preserve verbatim
+    af_body = fx6_body[m_idx:].strip("\n")  # keep the heading inside
 
-    # Render as two expanders; include the headings inside to preserve text verbatim
     render_lines_with_checkboxes(wb_body, key_prefix="fx6_wb", expanded=False, title="White balance A and B (Auto White Balance)")
     render_lines_with_checkboxes(af_body, key_prefix="fx6_af", expanded=False, title="AUTO FOCUS")
 
@@ -240,5 +254,4 @@ for title, body in sections:
     if title.startswith("Exposure Indexing"):
         render_lines_with_checkboxes(body, key_prefix="ei", expanded=True, title=title)
     else:
-        # Split the FX6 section into WB and AF expanders
         render_fx6_split(body)
