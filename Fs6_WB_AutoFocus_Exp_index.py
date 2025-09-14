@@ -114,4 +114,3 @@ def render_blocks(blocks, key_prefix="blk"):
 
 blocks = parse_blocks(FULL_TEXT)
 render_blocks(blocks)
-
