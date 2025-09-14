@@ -3,7 +3,26 @@ import streamlit as st
 
 st.set_page_config(page_title="Exposure Indexing + FX6 Guide", page_icon="🎥", layout="wide")
 st.title("Exposure Indexing (EI) & Sony FX6 Advanced Settings")
-st.caption("Numbered/lettered/roman lines are checkboxes. Wrapped lines now keep the correct hanging indent.")
+st.caption("Numbered/lettered/roman lines are checkboxes. Wrapped lines keep a proper hanging indent.")
+
+# --- inject CSS for hanging indents ---
+st.markdown("""
+<style>
+.step-row { display:flex; align-items:flex-start; gap:.5rem; margin:.15rem 0; }
+.step-row .cb-col { flex:0 0 auto; width:1.6rem; padding-top:.15rem; }
+.step-row .text-col { flex:1 1 auto; }
+
+/* marker+content grid so wraps align under the first line */
+.step { display:grid; grid-template-columns: 2.2em 1fr; column-gap:.5em; }
+.step .marker { font-weight:700; }
+.step .content { line-height:1.5; }
+
+/* logical indent levels for subitems */
+.level-0 { margin-left: 0; }
+.level-1 { margin-left: 1.5em; }  /* a., b., c. */
+.level-2 { margin-left: 3.0em; }  /* i., ii., iii. */
+</style>
+""", unsafe_allow_html=True)
 
 # ---------- YOUR TEXT (VERBATIM) ----------
 FULL_TEXT = """Exposure Indexing (EI) Guide:
@@ -92,38 +111,101 @@ the aperture 2 stops to compensate).
 NOTE: You don’t have to use an external monitor with exposure indexing. You can put
 the s709 LUT on the LCD screen and use the waveform monitor to display the SLog3
 signal. Using the same EI steps above, you will achieve the same creative effect.
+
+Sony FX6 Advanced Settings Guide: White Balance and Autofocus
+White balance A and B (Auto White Balance)
+In most filming situations, particularly verité/observational, using white balance presets such as
+3200K, 4300K, 5600K, is recommended. Presets will be close enough the majority of the time.
+When using all artificial lighting, you can manually set your white balance to match the color
+temperature you have chosen for your lights using the white balance button and multi-dial.
+However, there are times when an interview may have mixed lighting from a window, a practical
+light, and/or your own artificial lights. This is where the “A” and “B” white balance (auto white
+balance) settings and the use of a white/gray balance card come in handy. These tools will
+enable you to set a perfectly accurate white balance setting (color temperature) so that skin tones
+are represented accurately. Keep in mind that this is useful mainly in interviews with mixed
+lighting. It is not useful in verité/observational filming because lighting is changing all the time
+and therefore you would be white balancing constantly.
+For review, the reason it’s called “white balance” is because plain white cards are used as a
+baseline for the reflection of light. Essentially, we are showing the camera what plain white
+looks like in any given lighting situation. All people and objects reflect light; that’s how we are
+able to see the world around us. Plain white reflects the most light, which is why it is used for
+color balancing and hence the term “white balance.” In other words, if a camera’s color
+temperature is balanced to a white card, then all colors will be represented accurately.
+1. For review, to use a WB preset for most situations indoors and outdoors:
+a. Press the White Balance button on the side of the camera
+b. Use the Multi-Dial to adjust white balance.
+2. To set perfectly accurate white balance in mixed lighting with a white card, toggle the white
+balance switch to either A or B. Basically, these are two “slots” that allow you to save a custom
+white balance setting.
+a. Next, hold your white card in front of the lens so that it fills most of the frame. It is very
+important to make sure that the white card is reflecting as much light in the scene as
+possible. Otherwise, the white balance reading will be inaccurate.
+b. While holding the white balance card in front of the lens, press the “WB Set” button on
+the front of the camera body. The camera will now get an exact color temperature
+reading of the light “falling” on your participant’s face. This will now be saved to switch
+A or B, whichever you selected.
+(Continued on back)
+AUTO FOCUS: Sony cinema cameras have incredible auto focus / eye tracking capabilities.
+This feature only works with lenses that can electronically communicate with the camera. In
+most cases, this means a lens of the same brand. The Sony 28-135 cinema zoom works perfectly
+for this feature. We have two in the graduate equipment room.
+To engage this feature when using the Sony 28-135 cinema zoom, first adjust the focus
+ring to the proper position. The focus ring has two positions: The forward position (“AF/MF”)
+and the rearward position (“FULL MF”). For full autofocus functionality, adjust the focus ring
+to the forward position.
+1. You can toggle the “Focus Auto” switch on the front of the camera body to the auto
+position, and the camera will automatically reach peak focus on what it thinks is the
+most important part of the frame.
+a. You can also use the touchscreen to tap anywhere in the frame to engage the
+auto focusing tracking on a person or object. You will see a box appear
+around the person or object.
+b. To disengage the auto focus tracking, you can do one of three things:
+i. Slightly rotate the focus ring
+ii. Toggle the “Focus Auto” switch to the manual position
+iii. Press the “Push Auto” button once (on the front of the camera body)
+2. Having the “Focus Auto” switch toggled to the manual position is most useful and
+therefore recommended because you can both manually focus and engage and
+disengage the autofocus tracking as needed.
+a. When in this mode, use the touchscreen to tap anywhere in the frame to
+engage the auto focusing tracking on a person or object. You will see a box
+appear around the person or object. This is highly useful during interviews
+with people who move a lot in the chair.
+b. To disengage the auto focus tracking, you can do one of three things:
+i. Slightly rotate the focus ring
+ii. Toggle the “Focus Auto” switch to the auto position
+iii. Press the “Push Auto” button once (on the front of the camera body)
+c. Finally, when the “Focus Auto” switch is toggled to the manual position, and
+the lens is out of focus, you can press and hold the “Push Auto” button to
+quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
-# ---------- DETECTION PATTERNS ----------
+# ---------- DETECTION ----------
 TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)\.)\s+(.*)$')
 NUM_RE   = re.compile(r'^\d+\.')                 # level 0
 ALPHA_RE = re.compile(r'^[A-Za-z]\.')            # level 1
 ROMAN_RE = re.compile(r'^(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')  # level 2
 
 def level_for_token(token: str) -> int:
-    if NUM_RE.match(token):
-        return 0
-    if ALPHA_RE.match(token):
-        return 1
-    if ROMAN_RE.match(token):
-        return 2
+    if NUM_RE.match(token): return 0
+    if ALPHA_RE.match(token): return 1
+    if ROMAN_RE.match(token): return 2
     return 0
 
-# ---------- RENDER FUNCTIONS ----------
-def render_step_with_hanging_indent(token, text, level, key):
-    """Render a checkbox with proper hanging indent for wrapped lines."""
-    indent_em = 1.5 * level
-    html = f"""
-    <div style="display:flex; align-items:flex-start;">
-        <div style="margin-right:0.5em;">
-            <input type="checkbox" style="width:1em; height:1em;">
+# ---------- RENDER HELPERS ----------
+def render_step_row(token: str, text: str, level: int, key: str):
+    """Streamlit checkbox + grid text with hanging indent that survives wrapping."""
+    with st.container():
+        st.markdown(f"""
+        <div class="step-row">
+            <div class="cb-col">{'<input type="checkbox">'}</div>
+            <div class="text-col">
+                <div class="step level-{level}">
+                    <div class="marker">{token}</div>
+                    <div class="content">{text}</div>
+                </div>
+            </div>
         </div>
-        <div style="flex:1; margin-left:{indent_em}em; text-indent:-1.5em; padding-left:1.5em;">
-            <strong>{token}</strong> {text}
-        </div>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 def render_lines(body: str):
     for idx, raw in enumerate(body.splitlines(), start=1):
@@ -135,9 +217,9 @@ def render_lines(body: str):
         if m:
             token, rest = m.groups()
             lvl = level_for_token(token)
-            render_step_with_hanging_indent(token, rest, lvl, key=f"cb_{idx}")
+            render_step_row(token, rest, lvl, key=f"cb_{idx}")
         else:
             st.markdown(line)
 
-# ---------- MAIN RENDER ----------
+# ---------- MAIN ----------
 render_lines(FULL_TEXT)
