@@ -201,4 +201,44 @@ def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = Fa
                 st.markdown(line)
 
 def render_fx6_split(fx6_body: str):
-    # Split FX6 body into White Balance and Autofocus using the int
+    # Split FX6 body into White Balance and Autofocus using the internal marker "AUTO FOCUS:"
+    marker = "AUTO FOCUS:"
+    m_idx = fx6_body.find(marker)
+    if m_idx == -1:
+        # If not found, just render everything in one expander
+        render_lines_with_checkboxes(fx6_body, key_prefix="fx6_all", expanded=False, title="Sony FX6 Advanced Settings")
+        return
+    wb_body = fx6_body[:m_idx].strip("\n")
+    af_body = fx6_body[m_idx:].strip("\n")  # keep the line "AUTO FOCUS:" inside to preserve verbatim
+
+    # Render as two expanders; include the headings inside to preserve text verbatim
+    render_lines_with_checkboxes(wb_body, key_prefix="fx6_wb", expanded=False, title="White balance A and B (Auto White Balance)")
+    render_lines_with_checkboxes(af_body, key_prefix="fx6_af", expanded=False, title="AUTO FOCUS")
+
+# ---------- UI CONTROLS ----------
+colA, colB = st.columns([1, 1])
+with colA:
+    if st.button("Clear all checkboxes"):
+        for k in list(st.session_state.keys()):
+            if "_cb_" in k:
+                st.session_state[k] = False
+        st.success("Cleared.")
+
+with colB:
+    st.download_button(
+        "Download original text (UTF-8)",
+        data=FULL_TEXT,
+        file_name="ei_fx6_guide.txt",
+        mime="text/plain"
+    )
+
+st.divider()
+
+# ---------- RENDER ----------
+sections = split_top_sections(FULL_TEXT)
+for title, body in sections:
+    if title.startswith("Exposure Indexing"):
+        render_lines_with_checkboxes(body, key_prefix="ei", expanded=True, title=title)
+    else:
+        # Split the FX6 section into WB and AF expanders
+        render_fx6_split(body)
