@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Exposure Indexing + FX6 Guide", page_icon="🎥", layout="wide")
 st.title("Exposure Indexing (EI) & Sony FX6 Advanced Settings")
-st.caption("Each numbered/lettered/roman-numeral line is a checkbox. All other text is preserved as-is.")
+st.caption("Numbered/lettered/roman lines are checkboxes. Wrapping keeps indentation; text is verbatim.")
 
 # ---------- YOUR TEXT (VERBATIM) ----------
 FULL_TEXT = """Exposure Indexing (EI) Guide:
@@ -160,61 +160,71 @@ the lens is out of focus, you can press and hold the “Push Auto” button to
 quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
-# ---------- CONFIG ----------
-# Patterns to detect leading markers
-NUM_PATTERN   = re.compile(r'^\s*\d+\.\s+')
-ALPHA_PATTERN = re.compile(r'^\s*[a-zA-Z]\.\s+')
-ROMAN_PATTERN = re.compile(r'^\s*(?=[ivxlcdmIVXLCDM]+\.\s+)[ivxlcdmIVXLCDM]+\.\s+')
+# ---------- DETECTION PATTERNS ----------
+# token = beginning marker like "1.", "a.", "ii."
+TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)\.)\s+(.*)$')
+NUM_RE   = re.compile(r'^\s*\d+\.')                         # level 0
+ALPHA_RE = re.compile(r'^\s*[A-Za-z]\.')                    # level 1
+ROMAN_RE = re.compile(r'^\s*(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')  # level 2
 
-# Treat a line as a "checkbox step" if it starts with: number., letter., or roman numeral.
-STEP_PATTERN = re.compile(r'^\s*((\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\.)\s+')
-
+# ---------- SECTION TITLES ----------
 TOP_SECTION_TITLES = [
     "Exposure Indexing (EI) Guide:",
     "Sony FX6 Advanced Settings Guide: White Balance and Autofocus",
 ]
 
-# Indentation: one level = two em-spaces
-EM = " "  # Unicode em-space
-INDENT_PER_LEVEL = 2  # number of em-spaces per level
+def split_top_sections(full_text: str):
+    sections = []
+    t = full_text
+    i0 = t.find(TOP_SECTION_TITLES[0])
+    i1 = t.find(TOP_SECTION_TITLES[1])
+    if i0 != -1:
+        body0 = t[i0 + len(TOP_SECTION_TITLES[0]): i1 if i1 != -1 else None]
+        sections.append((TOP_SECTION_TITLES[0].rstrip(':'), body0.strip("\n")))
+    if i1 != -1:
+        body1 = t[i1 + len(TOP_SECTION_TITLES[1]):]
+        sections.append((TOP_SECTION_TITLES[1], body1.strip("\n")))
+    return sections
 
-def indent_for_line(line: str) -> int:
-    """Return logical indent level: 0 for 1., 1 for a., 2 for i./ii./iii."""
-    if NUM_PATTERN.match(line):
+def level_for_token(token: str) -> int:
+    if NUM_RE.match(token):
         return 0
-    if ALPHA_PATTERN.match(line):
+    if ALPHA_RE.match(token):
         return 1
-    if ROMAN_PATTERN.match(line):
+    if ROMAN_RE.match(token):
         return 2
     return 0
 
-def split_top_sections(full_text: str) -> list[tuple[str, str]]:
-    sections: list[tuple[str, str]] = []
-    text = full_text
-    i0 = text.find(TOP_SECTION_TITLES[0])
-    i1 = text.find(TOP_SECTION_TITLES[1])
-    if i0 != -1:
-        ei_body = text[i0 + len(TOP_SECTION_TITLES[0]): i1 if i1 != -1 else None]
-        sections.append((TOP_SECTION_TITLES[0].rstrip(':'), ei_body.strip("\n")))
-    if i1 != -1:
-        fx6_body = text[i1 + len(TOP_SECTION_TITLES[1]):]
-        sections.append((TOP_SECTION_TITLES[1], fx6_body.strip("\n")))
-    return sections
+def render_step_row(token: str, text: str, level: int, key: str):
+    """Render one checkbox row with hanging indent using columns."""
+    # left: checkbox, right: the full text with visible numbering and margin
+    col_cb, col_txt = st.columns([0.06, 0.94])  # adjust proportions if needed
+    with col_cb:
+        st.checkbox("", key=key)  # checkbox only, no label
+    with col_txt:
+        margin_em = 0.0 + (level * 1.5)  # tweak indent width here
+        html = f"""
+        <div style="margin-left:{margin_em}em; line-height:1.5;">
+            <strong>{token}</strong> {text}
+        </div>
+        """
+        st.markdown(html, unsafe_allow_html=True)
 
 def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = False, title: str | None = None):
-    ctx = st.expander(title, expanded=expanded) if title is not None else st.container()
-    with ctx:
-        for idx, raw_line in enumerate(body.splitlines(), start=1):
-            line = raw_line.rstrip()
+    container = st.expander(title, expanded=expanded) if title else st.container()
+    with container:
+        for idx, raw in enumerate(body.splitlines(), start=1):
+            line = raw.rstrip()
             if not line:
-                st.write("")  # preserve blank lines
+                st.write("")
                 continue
-            if STEP_PATTERN.match(line):
-                level = indent_for_line(line)
-                prefix = EM * (INDENT_PER_LEVEL * level)
-                # Use a stable key so state persists even if label spacing changes
-                st.checkbox(prefix + line, key=f"{key_prefix}_cb_{idx}")
+            m = TOKEN_RE.match(line)
+            if m:
+                token, rest = m.group(1), m.group(2)
+                lvl = level_for_token(token)
+                render_step_row(token, rest, lvl, key=f"{key_prefix}_cb_{idx}")
             else:
+                # Plain prose line (no checkbox)
                 st.markdown(line)
 
 def render_fx6_split(fx6_body: str):
@@ -224,7 +234,7 @@ def render_fx6_split(fx6_body: str):
         render_lines_with_checkboxes(fx6_body, key_prefix="fx6_all", expanded=False, title="Sony FX6 Advanced Settings")
         return
     wb_body = fx6_body[:m_idx].strip("\n")
-    af_body = fx6_body[m_idx:].strip("\n")  # keep the heading inside
+    af_body = fx6_body[m_idx:].strip("\n")  # keep "AUTO FOCUS:" heading inside
 
     render_lines_with_checkboxes(wb_body, key_prefix="fx6_wb", expanded=False, title="White balance A and B (Auto White Balance)")
     render_lines_with_checkboxes(af_body, key_prefix="fx6_af", expanded=False, title="AUTO FOCUS")
@@ -237,7 +247,6 @@ with colA:
             if "_cb_" in k:
                 st.session_state[k] = False
         st.success("Cleared.")
-
 with colB:
     st.download_button(
         "Download original text (UTF-8)",
@@ -249,8 +258,7 @@ with colB:
 st.divider()
 
 # ---------- RENDER ----------
-sections = split_top_sections(FULL_TEXT)
-for title, body in sections:
+for title, body in split_top_sections(FULL_TEXT):
     if title.startswith("Exposure Indexing"):
         render_lines_with_checkboxes(body, key_prefix="ei", expanded=True, title=title)
     else:
