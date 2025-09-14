@@ -18,9 +18,9 @@ st.markdown("""
 .step .content { line-height:1.5; }
 
 /* logical indent levels for subitems */
-.level-0 { margin-left: 0; }
-.level-1 { margin-left: 1.5em; }  /* a., b., c. */
-.level-2 { margin-left: 3.0em; }  /* i., ii., iii. */
+.level-0 { margin-left: 0; }        /* 1., 2., 3. */
+.level-1 { margin-left: 1.5em; }    /* a., b., c. */
+.level-2 { margin-left: 3.0em; }    /* i., ii., iii. */
 </style>
 """, unsafe_allow_html=True)
 
@@ -92,7 +92,7 @@ monitor.
 b. Next, because we darkened the external monitor by 1 stop, we need to open up the
 aperture by 1 stop to compensate and to bring the brightness of the external
 monitor image back up to the original brightness level.
-i. Open the aperture on the lens by 1 stop (for example, f/4 to f2.8)
+i. Slightly rotate the focus ring
 ii. You will notice that the external monitor brightened back up by 1 stop and
 the SLog image on the LCD screen brightened by 1 stop. Remember, the
 EI setting only affects the LUT; but changing the aperture affects both the
@@ -181,10 +181,10 @@ quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
 # ---------- DETECTION ----------
-TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)\.)\s+(.*)$')
+TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|i{1,3}|iv|v|vi{0,3}|ix|x)\.)\s+(.*)$', re.IGNORECASE)
 NUM_RE   = re.compile(r'^\d+\.')                 
 ALPHA_RE = re.compile(r'^[A-Za-z]\.')            
-ROMAN_RE = re.compile(r'^(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')
+ROMAN_RE = re.compile(r'^(i{1,3}|iv|v|vi{0,3}|ix|x)\.$', re.IGNORECASE)
 
 def level_for_token(token: str) -> int:
     if NUM_RE.match(token): return 0
@@ -194,13 +194,12 @@ def level_for_token(token: str) -> int:
 
 # ---------- PARSER ----------
 def parse_blocks(text: str):
-    """Merge continuation lines under the previous step and handle special keywords."""
     blocks = []
     current = None
     for raw in text.splitlines():
         line = raw.rstrip()
 
-        # Force "It is important to note" and "NOTE:" to start fresh unindented paragraph
+        # Force certain keywords to start unindented
         if line.strip().lower().startswith("it is important to note") or line.strip().upper().startswith("NOTE:") or \
            line.strip().startswith("**Sony FX6") or line.strip().startswith("**AUTO FOCUS:"):
             if current:
