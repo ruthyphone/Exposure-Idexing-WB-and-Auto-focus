@@ -3,7 +3,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Exposure Indexing + FX6 Guide", page_icon="🎥", layout="wide")
 st.title("Exposure Indexing (EI) & Sony FX6 Advanced Settings")
-st.caption("Numbered/lettered/roman lines are checkboxes. Wrapping keeps indentation; text is verbatim.")
+st.caption("Numbered/lettered/roman lines are checkboxes. Wrapped lines now keep the correct hanging indent.")
 
 # ---------- YOUR TEXT (VERBATIM) ----------
 FULL_TEXT = """Exposure Indexing (EI) Guide:
@@ -92,99 +92,13 @@ the aperture 2 stops to compensate).
 NOTE: You don’t have to use an external monitor with exposure indexing. You can put
 the s709 LUT on the LCD screen and use the waveform monitor to display the SLog3
 signal. Using the same EI steps above, you will achieve the same creative effect.
-
-Sony FX6 Advanced Settings Guide: White Balance and Autofocus
-White balance A and B (Auto White Balance)
-In most filming situations, particularly verité/observational, using white balance presets such as
-3200K, 4300K, 5600K, is recommended. Presets will be close enough the majority of the time.
-When using all artificial lighting, you can manually set your white balance to match the color
-temperature you have chosen for your lights using the white balance button and multi-dial.
-However, there are times when an interview may have mixed lighting from a window, a practical
-light, and/or your own artificial lights. This is where the “A” and “B” white balance (auto white
-balance) settings and the use of a white/gray balance card come in handy. These tools will
-enable you to set a perfectly accurate white balance setting (color temperature) so that skin tones
-are represented accurately. Keep in mind that this is useful mainly in interviews with mixed
-lighting. It is not useful in verité/observational filming because lighting is changing all the time
-and therefore you would be white balancing constantly.
-For review, the reason it’s called “white balance” is because plain white cards are used as a
-baseline for the reflection of light. Essentially, we are showing the camera what plain white
-looks like in any given lighting situation. All people and objects reflect light; that’s how we are
-able to see the world around us. Plain white reflects the most light, which is why it is used for
-color balancing and hence the term “white balance.” In other words, if a camera’s color
-temperature is balanced to a white card, then all colors will be represented accurately.
-1. For review, to use a WB preset for most situations indoors and outdoors:
-a. Press the White Balance button on the side of the camera
-b. Use the Multi-Dial to adjust white balance.
-2. To set perfectly accurate white balance in mixed lighting with a white card, toggle the white
-balance switch to either A or B. Basically, these are two “slots” that allow you to save a custom
-white balance setting.
-a. Next, hold your white card in front of the lens so that it fills most of the frame. It is very
-important to make sure that the white card is reflecting as much light in the scene as
-possible. Otherwise, the white balance reading will be inaccurate.
-b. While holding the white balance card in front of the lens, press the “WB Set” button on
-the front of the camera body. The camera will now get an exact color temperature
-reading of the light “falling” on your participant’s face. This will now be saved to switch
-A or B, whichever you selected.
-(Continued on back)
-AUTO FOCUS: Sony cinema cameras have incredible auto focus / eye tracking capabilities.
-This feature only works with lenses that can electronically communicate with the camera. In
-most cases, this means a lens of the same brand. The Sony 28-135 cinema zoom works perfectly
-for this feature. We have two in the graduate equipment room.
-To engage this feature when using the Sony 28-135 cinema zoom, first adjust the focus
-ring to the proper position. The focus ring has two positions: The forward position (“AF/MF”)
-and the rearward position (“FULL MF”). For full autofocus functionality, adjust the focus ring
-to the forward position.
-1. You can toggle the “Focus Auto” switch on the front of the camera body to the auto
-position, and the camera will automatically reach peak focus on what it thinks is the
-most important part of the frame.
-a. You can also use the touchscreen to tap anywhere in the frame to engage the
-auto focusing tracking on a person or object. You will see a box appear
-around the person or object.
-b. To disengage the auto focus tracking, you can do one of three things:
-i. Slightly rotate the focus ring
-ii. Toggle the “Focus Auto” switch to the manual position
-iii. Press the “Push Auto” button once (on the front of the camera body)
-2. Having the “Focus Auto” switch toggled to the manual position is most useful and
-therefore recommended because you can both manually focus and engage and
-disengage the autofocus tracking as needed.
-a. When in this mode, use the touchscreen to tap anywhere in the frame to
-engage the auto focusing tracking on a person or object. You will see a box
-appear around the person or object. This is highly useful during interviews
-with people who move a lot in the chair.
-b. To disengage the auto focus tracking, you can do one of three things:
-i. Slightly rotate the focus ring
-ii. Toggle the “Focus Auto” switch to the auto position
-iii. Press the “Push Auto” button once (on the front of the camera body)
-c. Finally, when the “Focus Auto” switch is toggled to the manual position, and
-the lens is out of focus, you can press and hold the “Push Auto” button to
-quickly reach peak focus without engaging the autofocus tracking feature.
 """
 
 # ---------- DETECTION PATTERNS ----------
-# token = beginning marker like "1.", "a.", "ii."
 TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)\.)\s+(.*)$')
-NUM_RE   = re.compile(r'^\s*\d+\.')                         # level 0
-ALPHA_RE = re.compile(r'^\s*[A-Za-z]\.')                    # level 1
-ROMAN_RE = re.compile(r'^\s*(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')  # level 2
-
-# ---------- SECTION TITLES ----------
-TOP_SECTION_TITLES = [
-    "Exposure Indexing (EI) Guide:",
-    "Sony FX6 Advanced Settings Guide: White Balance and Autofocus",
-]
-
-def split_top_sections(full_text: str):
-    sections = []
-    t = full_text
-    i0 = t.find(TOP_SECTION_TITLES[0])
-    i1 = t.find(TOP_SECTION_TITLES[1])
-    if i0 != -1:
-        body0 = t[i0 + len(TOP_SECTION_TITLES[0]): i1 if i1 != -1 else None]
-        sections.append((TOP_SECTION_TITLES[0].rstrip(':'), body0.strip("\n")))
-    if i1 != -1:
-        body1 = t[i1 + len(TOP_SECTION_TITLES[1]):]
-        sections.append((TOP_SECTION_TITLES[1], body1.strip("\n")))
-    return sections
+NUM_RE   = re.compile(r'^\d+\.')                 # level 0
+ALPHA_RE = re.compile(r'^[A-Za-z]\.')            # level 1
+ROMAN_RE = re.compile(r'^(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')  # level 2
 
 def level_for_token(token: str) -> int:
     if NUM_RE.match(token):
@@ -195,71 +109,35 @@ def level_for_token(token: str) -> int:
         return 2
     return 0
 
-def render_step_row(token: str, text: str, level: int, key: str):
-    """Render one checkbox row with hanging indent using columns."""
-    # left: checkbox, right: the full text with visible numbering and margin
-    col_cb, col_txt = st.columns([0.06, 0.94])  # adjust proportions if needed
-    with col_cb:
-        st.checkbox("", key=key)  # checkbox only, no label
-    with col_txt:
-        margin_em = 0.0 + (level * 1.5)  # tweak indent width here
-        html = f"""
-        <div style="margin-left:{margin_em}em; line-height:1.5;">
+# ---------- RENDER FUNCTIONS ----------
+def render_step_with_hanging_indent(token, text, level, key):
+    """Render a checkbox with proper hanging indent for wrapped lines."""
+    indent_em = 1.5 * level
+    html = f"""
+    <div style="display:flex; align-items:flex-start;">
+        <div style="margin-right:0.5em;">
+            <input type="checkbox" style="width:1em; height:1em;">
+        </div>
+        <div style="flex:1; margin-left:{indent_em}em; text-indent:-1.5em; padding-left:1.5em;">
             <strong>{token}</strong> {text}
         </div>
-        """
-        st.markdown(html, unsafe_allow_html=True)
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
-def render_lines_with_checkboxes(body: str, key_prefix: str, expanded: bool = False, title: str | None = None):
-    container = st.expander(title, expanded=expanded) if title else st.container()
-    with container:
-        for idx, raw in enumerate(body.splitlines(), start=1):
-            line = raw.rstrip()
-            if not line:
-                st.write("")
-                continue
-            m = TOKEN_RE.match(line)
-            if m:
-                token, rest = m.group(1), m.group(2)
-                lvl = level_for_token(token)
-                render_step_row(token, rest, lvl, key=f"{key_prefix}_cb_{idx}")
-            else:
-                # Plain prose line (no checkbox)
-                st.markdown(line)
+def render_lines(body: str):
+    for idx, raw in enumerate(body.splitlines(), start=1):
+        line = raw.rstrip()
+        if not line:
+            st.write("")
+            continue
+        m = TOKEN_RE.match(line)
+        if m:
+            token, rest = m.groups()
+            lvl = level_for_token(token)
+            render_step_with_hanging_indent(token, rest, lvl, key=f"cb_{idx}")
+        else:
+            st.markdown(line)
 
-def render_fx6_split(fx6_body: str):
-    marker = "AUTO FOCUS:"
-    m_idx = fx6_body.find(marker)
-    if m_idx == -1:
-        render_lines_with_checkboxes(fx6_body, key_prefix="fx6_all", expanded=False, title="Sony FX6 Advanced Settings")
-        return
-    wb_body = fx6_body[:m_idx].strip("\n")
-    af_body = fx6_body[m_idx:].strip("\n")  # keep "AUTO FOCUS:" heading inside
-
-    render_lines_with_checkboxes(wb_body, key_prefix="fx6_wb", expanded=False, title="White balance A and B (Auto White Balance)")
-    render_lines_with_checkboxes(af_body, key_prefix="fx6_af", expanded=False, title="AUTO FOCUS")
-
-# ---------- UI CONTROLS ----------
-colA, colB = st.columns([1, 1])
-with colA:
-    if st.button("Clear all checkboxes"):
-        for k in list(st.session_state.keys()):
-            if "_cb_" in k:
-                st.session_state[k] = False
-        st.success("Cleared.")
-with colB:
-    st.download_button(
-        "Download original text (UTF-8)",
-        data=FULL_TEXT,
-        file_name="ei_fx6_guide.txt",
-        mime="text/plain"
-    )
-
-st.divider()
-
-# ---------- RENDER ----------
-for title, body in split_top_sections(FULL_TEXT):
-    if title.startswith("Exposure Indexing"):
-        render_lines_with_checkboxes(body, key_prefix="ei", expanded=True, title=title)
-    else:
-        render_fx6_split(body)
+# ---------- MAIN RENDER ----------
+render_lines(FULL_TEXT)
