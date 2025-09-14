@@ -112,7 +112,7 @@ NOTE: You don’t have to use an external monitor with exposure indexing. You ca
 the s709 LUT on the LCD screen and use the waveform monitor to display the SLog3
 signal. Using the same EI steps above, you will achieve the same creative effect.
 
-Sony FX6 Advanced Settings Guide: White Balance and Autofocus
+**Sony FX6 Advanced Settings Guide: White Balance and Autofocus**
 White balance A and B (Auto White Balance)
 In most filming situations, particularly verité/observational, using white balance presets such as
 3200K, 4300K, 5600K, is recommended. Presets will be close enough the majority of the time.
@@ -144,8 +144,9 @@ b. While holding the white balance card in front of the lens, press the “WB Se
 the front of the camera body. The camera will now get an exact color temperature
 reading of the light “falling” on your participant’s face. This will now be saved to switch
 A or B, whichever you selected.
-(Continued on back)
-AUTO FOCUS: Sony cinema cameras have incredible auto focus / eye tracking capabilities.
+
+**AUTO FOCUS:**
+Sony cinema cameras have incredible auto focus / eye tracking capabilities.
 This feature only works with lenses that can electronically communicate with the camera. In
 most cases, this means a lens of the same brand. The Sony 28-135 cinema zoom works perfectly
 for this feature. We have two in the graduate equipment room.
@@ -181,9 +182,9 @@ quickly reach peak focus without engaging the autofocus tracking feature.
 
 # ---------- DETECTION ----------
 TOKEN_RE = re.compile(r'^\s*((?:\d+|[A-Za-z]|[ivxlcdmIVXLCDM]+)\.)\s+(.*)$')
-NUM_RE   = re.compile(r'^\d+\.')                 # level 0
-ALPHA_RE = re.compile(r'^[A-Za-z]\.')            # level 1
-ROMAN_RE = re.compile(r'^(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')  # level 2
+NUM_RE   = re.compile(r'^\d+\.')                 
+ALPHA_RE = re.compile(r'^[A-Za-z]\.')            
+ROMAN_RE = re.compile(r'^(?=[ivxlcdmIVXLCDM]+\.)[ivxlcdmIVXLCDM]+\.')
 
 def level_for_token(token: str) -> int:
     if NUM_RE.match(token): return 0
@@ -193,17 +194,28 @@ def level_for_token(token: str) -> int:
 
 # ---------- PARSER ----------
 def parse_blocks(text: str):
-    """Merge continuation lines under the previous step."""
+    """Merge continuation lines under the previous step and handle special keywords."""
     blocks = []
     current = None
     for raw in text.splitlines():
         line = raw.rstrip()
+
+        # Force "It is important to note" and "NOTE:" to start fresh unindented paragraph
+        if line.strip().lower().startswith("it is important to note") or line.strip().upper().startswith("NOTE:") or \
+           line.strip().startswith("**Sony FX6") or line.strip().startswith("**AUTO FOCUS:"):
+            if current:
+                blocks.append(current)
+                current = None
+            blocks.append(("prose", None, None, line))
+            continue
+
         if line.strip() == "":
             if current:
                 blocks.append(current)
                 current = None
             blocks.append(("prose", None, None, ""))
             continue
+
         m = TOKEN_RE.match(line)
         if m:
             if current:
